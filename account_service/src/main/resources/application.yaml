@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: conduit
+  datasource: 
+    url: jdbc:postgresql://localhost:5433/conduit
+    username: postgres
+    password: 12345
+    driver-class-name: org.postgresql.Driver
+  jpa:
+   hibernate: 
+    ddl-auto: update
+  
+  rabbitmq: 
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
