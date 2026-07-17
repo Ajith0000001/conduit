@@ -10,13 +10,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.account_service.dto.AccountCreatedEvent;
 import com.project.account_service.model.Account;
 import com.project.account_service.model.OutboxEvent;
 import com.project.account_service.repo.AccountRepo;
 import com.project.account_service.repo.OutboxRepo;
 import com.project.account_service.socket.parser.AccountCreation;
 import com.project.account_service.socket.parser.TransferMoney;
+import com.project.dtos.AccountCreationEvent;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,13 +31,12 @@ public class BankService {
     private final RabbitTemplate rabbitTemplate;
     private final OutboxRepo outboxRepo;
     private final ObjectMapper objectMapper;
-    private String traceId = "";
 
 
     @Transactional
     public void accountCreation(AccountCreation accountCreation) throws Exception {
 
-        traceId = UUID.randomUUID().toString().substring(7);
+        String traceId = UUID.randomUUID().toString().substring(7);
 
 
         if(accountCreation.getInitalAmount() == 0 ) return;
@@ -51,16 +50,19 @@ public class BankService {
          if(account == null) throw new RuntimeException("Account creation failed in db");
 
          log.info("[{}] Account created with account id {}",traceId,account.getAccountId());
+         String eventId = UUID.randomUUID().toString();
          
-         AccountCreatedEvent event = new AccountCreatedEvent();
+         AccountCreationEvent event = new AccountCreationEvent();
          event.setAccountId(account.getAccountId());
          event.setAccountNumber(account.getAccountNumber());
          event.setBalance(account.getBalance());
          event.setBlocked(account.isBlocked());
+         event.setEventId(eventId);
 
          String payload = objectMapper.writeValueAsString(event);
+         CorrelationData correlationData = new CorrelationData();
+         correlationData.setId(UUID.randomUUID().toString());
 
-         String eventId = UUID.randomUUID().toString();
 
          OutboxEvent outboxEvent = new OutboxEvent();
          outboxEvent.setCreatedAt(LocalDateTime.now());
@@ -68,14 +70,13 @@ public class BankService {
          outboxEvent.setPayload(payload);
          outboxEvent.setStatus("PENDING");
          outboxEvent.setEvent_id(eventId);
+         outboxEvent.setCorrelationId(correlationData.getId());
 
          outboxRepo.save(outboxEvent);
           log.info("[{}] Account outbox event created with id of {}" , traceId,eventId);
 
-         CorrelationData correlationData = new CorrelationData();
-         correlationData.setId("11");
 
-        rabbitTemplate.convertAndSend("account-events", "account.created","From producer,"+eventId,correlationData);
+        rabbitTemplate.convertAndSend("account-events", "account.created",event,correlationData);
 
         log.info("Account creation Successfully",account);
 

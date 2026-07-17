@@ -14,8 +14,8 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-@Table(name = "transactions")
-public class Transaction {
+@Table(name = "transaction_history")
+public class TransactionHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -15,5 +15,16 @@ spring:
     port: 5672
     username: guest
     password: guest
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ajithdhas2003@gmail.com
+    password: fkug yddr qrsf gmrz
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 server:
     port: 8082

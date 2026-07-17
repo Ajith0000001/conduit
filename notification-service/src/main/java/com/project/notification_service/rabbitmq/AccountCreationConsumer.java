@@ -2,30 +2,39 @@ package com.project.notification_service.rabbitmq;
 
 import java.io.IOException;
 
-import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
-import com.project.notification_service.events.AccountCreatedEvent;
-import com.rabbitmq.client.Channel;
+import com.project.dtos.AccountCreationEvent;
+import com.project.notification_service.service.EmailService;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@AllArgsConstructor
 public class AccountCreationConsumer {
 
 
-    @RabbitListener(queues = RabbitmqConfig.notificationQueue)
-    public void receiveMessage(String payload) throws IOException {
+    final private EmailService emailService;
 
+
+    @RabbitListener(queues = RabbitmqConfig.notificationQueue)
+    public void receiveMessage(AccountCreationEvent event) throws IOException {
+
+            log.info("Account Number {}",event.getAccountNumber());
 
         try {
-        log.info("Payload: {}",payload);
-        // channel.basicAck(dId, false);
+             emailService.sendAccountCreatedMail(
+        "ajithdhas003@gmail.com",
+        "Account Number: " + event.getAccountNumber());
+
+
+        log.info("Payload: {}",event.getAccountNumber());
             
         } catch (Exception e) {
-            // channel.basicNack(dId, false, false);
+            log.info("Error [{}]", e.getMessage());
         }
 
         

@@ -32,10 +32,10 @@ public CommandLineRunner commandLineRunner() {
 
     return args -> {
 
-        // rabbitTemplate.execute(channel -> {
-        //     System.out.println("RabbitMQ Connected");
-        //     return null;
-        // });
+        rabbitTemplate.execute(channel -> {
+            System.out.println("RabbitMQ Connected");
+            return null;
+        });
 
         new Thread(() -> tcpSocket.listen()).start();
     };

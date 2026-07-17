@@ -1,4 +1,4 @@
-package com.project.account_service.dto;
+package com.project.dtos;
 
 import java.math.BigDecimal;
 
@@ -7,10 +7,12 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class AccountCreatedEvent {
+public class AccountCreationEvent {
     
     private long accountId;
     private String accountNumber;
     private BigDecimal balance;
     private boolean blocked;
+    private String eventId;
 }
+

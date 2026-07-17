@@ -21,6 +21,7 @@ public class OutboxEvent {
 
     private String event_id;
     private String eventType;
+    private String correlationId;
 
     @Column(columnDefinition = "TEXT")
     private String payload;
