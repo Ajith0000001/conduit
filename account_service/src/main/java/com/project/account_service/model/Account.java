@@ -1,5 +1,4 @@
-package com.project.conduit.model;
-
+package com.project.account_service.model;
 import java.math.BigDecimal;
 
 import jakarta.persistence.Entity;

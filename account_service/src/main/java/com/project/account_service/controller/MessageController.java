@@ -1,5 +1,4 @@
-package com.project.conduit.controller;
-
+package com.project.account_service.controller;
 import java.io.IOException;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -7,7 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.project.conduit.rabbitmq.RabbitmqConfig;
+import com.project.account_service.rabbitmq.RabbitmqConfig;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +25,16 @@ public class MessageController {
         for(int i = 0; i < 15; ++i) {
         
         rabbitTemplate.convertAndSend(RabbitmqConfig.transactionQueue,"Hello " + i);
+
+        }
+    }
+
+    @GetMapping("/acc")
+    public void sendMessageAccountCreation() throws IOException{
+
+        for(int i = 0; i < 15; ++i) {
+        
+        rabbitTemplate.convertAndSend("fanout-exchange","","Account " + i);
 
         }
     }

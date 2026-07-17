@@ -1,9 +1,9 @@
-package com.project.conduit.repo;
 
+package com.project.account_service.repo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import com.project.conduit.model.Account;
+import com.project.account_service.model.Account;
 
 public interface AccountRepo extends JpaRepository<Account,Integer>{
 

@@ -1,5 +1,5 @@
-package com.project.conduit.socket;
 
+package com.project.account_service.socket;
 import java.io.EOFException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,10 +11,10 @@ import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.project.conduit.service.BankService;
-import com.project.conduit.socket.parser.AccountCreation;
-import com.project.conduit.socket.parser.BlockAccount;
-import com.project.conduit.socket.parser.TransferMoney;
+import com.project.account_service.service.BankService;
+import com.project.account_service.socket.parser.AccountCreation;
+import com.project.account_service.socket.parser.BlockAccount;
+import com.project.account_service.socket.parser.TransferMoney;
 
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
@@ -114,12 +114,17 @@ public class TcpSocket {
     }
 
     private void parseAccountCreation(byte[] payload) {
-
+        try {
         ByteBuffer buffer = ByteBuffer.wrap(payload);
 
         AccountCreation accountCreation = new AccountCreation(buffer.getInt());
 
         bankService.accountCreation(accountCreation);
+            
+        } catch (Exception e) {
+            log.info("error: {}",e.getMessage());
+        }
+
 
     }
 

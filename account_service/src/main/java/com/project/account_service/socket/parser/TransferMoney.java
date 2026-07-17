@@ -1,5 +1,5 @@
-package com.project.conduit.socket.parser;
 
+package com.project.account_service.socket.parser;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
