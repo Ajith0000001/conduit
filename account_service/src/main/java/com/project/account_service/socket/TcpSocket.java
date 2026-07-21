@@ -16,7 +16,6 @@ import com.project.account_service.socket.parser.AccountCreation;
 import com.project.account_service.socket.parser.BlockAccount;
 import com.project.account_service.socket.parser.TransferMoney;
 
-import lombok.val;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -97,9 +96,13 @@ public class TcpSocket {
                 }
 
                 switch (type) {
-                    case 1 -> parseAccountCreation(payload) ;
-                    case 2 -> parseDeleteAccount(payload);
-                    case 3 -> parseTransferMoney(payload);
+                    case 1 -> {
+                        String accountNumber = parseAccountCreation(payload) ;
+                        sendAccountCreationResponse(out, accountNumber);
+
+                    }
+                    case 2 -> parseTransferMoney(payload);
+                    case 3 -> parseDeleteAccount(payload);
                     default -> log.info("Default log");
                 }
 
@@ -113,16 +116,17 @@ public class TcpSocket {
 
     }
 
-    private void parseAccountCreation(byte[] payload) {
+    private String parseAccountCreation(byte[] payload) {
         try {
         ByteBuffer buffer = ByteBuffer.wrap(payload);
 
         AccountCreation accountCreation = new AccountCreation(buffer.getInt());
 
-        bankService.accountCreation(accountCreation);
+        return bankService.accountCreation(accountCreation);
             
         } catch (Exception e) {
             log.info("error: {}",e.getMessage());
+            return null;
         }
 
 
@@ -159,4 +163,22 @@ public class TcpSocket {
     bankService.transferMoney(transferMoney);
 
     }
+
+    private void sendAccountCreationResponse(
+        OutputStream out,
+        String accountNumber) throws Exception {
+
+    byte[] accountBytes =
+            accountNumber.getBytes(StandardCharsets.UTF_8);
+
+    ByteBuffer response =
+            ByteBuffer.allocate(8 + accountBytes.length);
+
+    response.putInt(accountBytes.length); // payload length
+    response.putInt(101);                 // response packet type
+    response.put(accountBytes);
+
+    out.write(response.array());
+    out.flush();
+}
 }

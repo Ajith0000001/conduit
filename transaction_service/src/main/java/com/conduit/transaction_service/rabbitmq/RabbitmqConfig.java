@@ -1,5 +1,7 @@
 package com.conduit.transaction_service.rabbitmq;
 
+import java.util.Queue;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -13,6 +15,7 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitmqConfig {
 
     static  final String transactionQueue = "transaction-queue";
+    static  final String transferQueue = "transfer-queue";
 
       @Bean 
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
@@ -44,5 +47,7 @@ public class RabbitmqConfig {
     // public Queue transactionQueue() {
     //     return new Queue(transactionQueue,true);
     // }
+
+
     
 }

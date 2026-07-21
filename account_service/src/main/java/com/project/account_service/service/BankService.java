@@ -34,12 +34,12 @@ public class BankService {
 
 
     @Transactional
-    public void accountCreation(AccountCreation accountCreation) throws Exception {
+    public String accountCreation(AccountCreation accountCreation) throws Exception {
 
         String traceId = UUID.randomUUID().toString().substring(7);
 
 
-        if(accountCreation.getInitalAmount() == 0 ) return;
+        if(accountCreation.getInitalAmount() == 0 ) return null;
 
         Account account = new Account();
         account.setAccountNumber(UUID.randomUUID().toString());
@@ -80,6 +80,8 @@ public class BankService {
 
         log.info("Account creation Successfully",account);
 
+        return account.getAccountNumber();
+
 
     }
 
@@ -109,14 +111,16 @@ public class BankService {
                 amount, senderAccNo);
 
         // Simulate an error
-        int x = 10 / 0;
+        // int x = 10 / 0;
 
         // Credit receiver
         jdbcTemplate.update(
                 "UPDATE account SET balance = balance + ? WHERE account_number = ?",
                 amount, receiverAccNo);
 
+                rabbitTemplate.convertAndSend("account-events","account.transfer","Money Transfer");
 
+                log.info("Money transfer");
 
 
     }

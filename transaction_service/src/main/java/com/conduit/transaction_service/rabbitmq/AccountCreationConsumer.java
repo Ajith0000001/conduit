@@ -84,6 +84,20 @@ public class AccountCreationConsumer {
 
         
     }
+    
+    @RabbitListener(queues = RabbitmqConfig.transferQueue)
+    public void moneyTransfer(String payload,Channel channel, Message message) throws Exception {
+        long deliveryTag = message.getMessageProperties().getDeliveryTag();
+
+        try {
+        log.info(payload);
+        channel.basicAck(deliveryTag, false);
+            
+        } catch (Exception e) {
+            log.info(e.getMessage());
+        channel.basicNack(deliveryTag, false, false);
+        }
+    }
 
     @SuppressWarnings("unchecked")
     public long getRetryCount(Message message) {

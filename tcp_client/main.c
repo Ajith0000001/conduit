@@ -3,12 +3,15 @@
 #include <stdint.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <string.h>
 
 #define PORT 9000
 
 #define CREATE_ACCOUNT 1
-#define BLOCK_ACCOUNT  2
-#define TRANSFER        3
+#define BLOCK_ACCOUNT  3
+#define TRANSFER       2
+
+#define CREATE_ACCOUNT_RESPONSE 101
 
 typedef struct
 {
@@ -33,100 +36,175 @@ typedef struct
     uint32_t type;
 } PacketHeader;
 
-void select_user_type(int socketfd);
-
-void starter(int socketfd)
+int read_n(int sockfd, void *buf, int len)
 {
-    printf("******************************\n");
-    select_user_type(socketfd);
+    int total = 0;
+
+    while (total < len)
+    {
+        int n = recv(
+            sockfd,
+            (char *)buf + total,
+            len - total,
+            0);
+
+        if (n <= 0)
+            return n;
+
+        total += n;
+    }
+
+    return total;
 }
 
-void select_user_type(int socketfd)
+int send_n(int sockfd, const void *buf, int len)
 {
-    uint32_t choice;
+    int total = 0;
 
-    printf("1. Create Account\n");
-    printf("2. Block Account\n");
-    printf("3. Transfer Money\n");
-    printf("0. Exit\n");
+    while (total < len)
+    {
+        int n = send(
+            sockfd,
+            (const char *)buf + total,
+            len - total,
+            0);
 
-    printf("Enter choice : ");
-    scanf("%u", &choice);
+        if (n <= 0)
+            return n;
 
+        total += n;
+    }
+
+    return total;
+}
+void transfer_money(int socketfd)
+{
+    TransferMoney t;
     PacketHeader header;
 
-    switch (choice)
+    printf("Sender Account Number : ");
+    scanf("%36s", t.sender_uuid);
+
+    printf("Receiver Account Number : ");
+    scanf("%36s", t.receiver_uuid);
+
+    printf("Amount : ");
+    scanf("%u", &t.amount);
+
+    header.len = htonl(78);
+    header.type = htonl(TRANSFER);
+
+    uint32_t amount = htonl(t.amount);
+
+    send_n(socketfd, &header, sizeof(header));
+    send_n(socketfd, t.sender_uuid, 37);
+    send_n(socketfd, t.receiver_uuid, 37);
+    send_n(socketfd, &amount, sizeof(amount));
+
+    printf("Transfer request sent\n");
+}
+
+void create_account(int socketfd)
+{
+    AccountCreation ac;
+    PacketHeader header;
+
+    printf("Initial Deposit : ");
+    scanf("%u", &ac.amount);
+
+    ac.amount = htonl(ac.amount);
+
+    header.len = htonl(sizeof(AccountCreation));
+    header.type = htonl(CREATE_ACCOUNT);
+
+    send(socketfd, &header, sizeof(header), 0);
+    send(socketfd, &ac, sizeof(ac), 0);
+
+    printf("Request sent...\n");
+
+    PacketHeader response;
+
+    if (read_n(socketfd,
+               &response,
+               sizeof(response)) <= 0)
     {
+        printf("Server disconnected\n");
+        return;
+    }
+
+    response.len = ntohl(response.len);
+    response.type = ntohl(response.type);
+
+    printf("Response Type : %u\n", response.type);
+
+    if (response.type == CREATE_ACCOUNT_RESPONSE)
+    {
+        char *accountNumber =
+            malloc(response.len + 1);
+
+        if (accountNumber == NULL)
+        {
+            printf("Memory allocation failed\n");
+            return;
+        }
+
+        if (read_n(socketfd,
+                   accountNumber,
+                   response.len) <= 0)
+        {
+            printf("Failed to receive payload\n");
+            free(accountNumber);
+            return;
+        }
+
+        accountNumber[response.len] = '\0';
+
+        printf("\n");
+        printf("================================\n");
+        printf("Account Created Successfully\n");
+        printf("Account Number : %s\n",
+               accountNumber);
+        printf("================================\n");
+
+        free(accountNumber);
+    }
+    else
+    {
+        printf("Unexpected response type\n");
+    }
+}
+
+void menu(int socketfd)
+{
+    while (1)
+    {
+        int choice;
+
+        printf("\n");
+        printf("1. Create Account\n");
+        printf("2. Transfer Money\n");
+        printf("0. Exit\n");
+        printf("Choice : ");
+
+        scanf("%d", &choice);
+
+        switch (choice)
+        {
         case CREATE_ACCOUNT:
-        {
-            AccountCreation ac;
-
-            printf("Initial Deposit : ");
-            scanf("%u", &ac.amount);
-
-            ac.amount = htonl(ac.amount);
-
-            header.len = htonl(sizeof(AccountCreation));
-            header.type = htonl(CREATE_ACCOUNT);
-
-            send(socketfd, &header, sizeof(header), 0);
-            send(socketfd, &ac, sizeof(ac), 0);
-
+            create_account(socketfd);
             break;
-        }
-
-        case BLOCK_ACCOUNT:
-        {
-            BlockAccount b;
-
-            printf("Account Id : ");
-            scanf("%u", &b.account_id);
-
-            b.account_id = htonl(b.account_id);
-
-            header.len = htonl(sizeof(BlockAccount));
-            header.type = htonl(BLOCK_ACCOUNT);
-
-            send(socketfd, &header, sizeof(header), 0);
-            send(socketfd, &b, sizeof(b), 0);
-
-            break;
-        }
-
+        
         case TRANSFER:
-        {
-            TransferMoney t;
-
-            printf("Sender Account : ");
-            scanf("%36s", t.sender_uuid);
-
-            printf("Receiver Account : ");
-            scanf("%36s", t.receiver_uuid);
-
-            printf("Amount : ");
-            scanf("%u", &t.amount);
-
-
-            header.len = htonl(78);
-            header.type = htonl(TRANSFER);
-
-            send(socketfd, &header, sizeof(header), 0);
-
-            send(socketfd, t.sender_uuid, 37, 0);
-            send(socketfd, t.receiver_uuid, 37, 0);
-
-            uint32_t amt = htonl(t.amount);
-            send(socketfd, &amt, sizeof(amt), 0);
-
+            transfer_money(socketfd);
             break;
-        }
 
         case 0:
             close(socketfd);
             exit(0);
 
         default:
-            printf("Invalid Choice\n");
+            printf("Invalid choice\n");
+        }
     }
 }
 
@@ -136,7 +214,9 @@ int main()
 
     struct sockaddr_in server_addr;
 
-    socketfd = socket(AF_INET, SOCK_STREAM, 0);
+    socketfd = socket(AF_INET,
+                      SOCK_STREAM,
+                      0);
 
     if (socketfd < 0)
     {
@@ -146,17 +226,23 @@ int main()
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
-    inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr);
+
+    inet_pton(AF_INET,
+              "127.0.0.1",
+              &server_addr.sin_addr);
 
     if (connect(socketfd,
                 (struct sockaddr *)&server_addr,
                 sizeof(server_addr)) < 0)
     {
         perror("connect");
+        close(socketfd);
         return 1;
     }
 
-    starter(socketfd);
+    printf("Connected to server\n");
+
+    menu(socketfd);
 
     close(socketfd);
 

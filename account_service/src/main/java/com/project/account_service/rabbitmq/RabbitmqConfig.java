@@ -86,6 +86,11 @@ public class RabbitmqConfig {
     }
 
     @Bean
+    public Queue transferQueue() {
+        return new Queue("transfer-queue",true);
+    }
+
+    @Bean
     public Queue retryQueue() {
         System.out.println("creating retry quque...");
 
@@ -106,6 +111,7 @@ public class RabbitmqConfig {
                 .to(accouTopicExchange())
                 .with("account.*");
     }
+
 
     @Bean
     public Binding retryBinding() {
@@ -130,6 +136,13 @@ public class RabbitmqConfig {
         return BindingBuilder.bind(transactQueueFn())
                 .to(accouTopicExchange())
                 .with("account.created");
+    }
+
+    @Bean
+    public Binding accountTransferBinding() {
+        return BindingBuilder.bind(transferQueue())
+                    .to(accouTopicExchange())
+                    .with("account.transfer");
     }
 
 }
